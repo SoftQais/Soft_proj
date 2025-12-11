@@ -7,6 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+/**
+ * Application configuration: wires repositories and services.
+ */
 public class AppConfig {
 
     private final BookRepository bookRepository;
@@ -18,6 +21,8 @@ public class AppConfig {
     private final AuthService authService;
     private final BorrowService borrowService;
     private final ReminderService reminderService;
+    private final UserManagementService userManagementService;
+    private final HistoryService historyService;
     private final TimeProvider timeProvider;
     private final EmailServer emailServer;
 
@@ -26,7 +31,7 @@ public class AppConfig {
 
         this.bookRepository = new FileBookRepository(dataDir.resolve("books.txt"));
         this.userRepository = new FileUserRepository(dataDir.resolve("users.txt"));
-        this.loanRepository = new FileLoanRepository(dataDir.resolve("loons.txt")); // لو اسمك loans صحّحه هون
+        this.loanRepository = new FileLoanRepository(dataDir.resolve("loans.txt"));
         this.fineRepository = new FileFineRepository(dataDir.resolve("fines.txt"));
 
         seedDefaultAdmin();
@@ -38,11 +43,14 @@ public class AppConfig {
         this.timeProvider = new SystemTimeProvider();
         this.borrowService = new BorrowService(bookRepository, loanRepository, fineRepository, timeProvider);
 
-        // --- Sprint 3 wiring ---
         this.reminderService = new ReminderService(loanRepository, userRepository, timeProvider);
         this.emailServer = new ConsoleEmailServer();
         Observer emailNotifier = new EmailNotifier(emailServer);
         this.reminderService.addObserver(emailNotifier);
+
+        this.userManagementService = new UserManagementService(userRepository, loanRepository);
+
+        this.historyService = new HistoryService(loanRepository, timeProvider);
     }
 
     private void seedDefaultAdmin() {
@@ -105,6 +113,14 @@ public class AppConfig {
 
     public ReminderService reminderService() {
         return reminderService;
+    }
+
+    public UserManagementService userManagementService() {
+        return userManagementService;
+    }
+
+    public HistoryService historyService() {
+        return historyService;
     }
 
     public TimeProvider timeProvider() {

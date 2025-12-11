@@ -17,7 +17,7 @@
     </properties>
 
     <dependencies>
-        <!-- JUnit 5 -->
+        <!-- JUnit 5 (API + Engine) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -25,10 +25,18 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito (لاحقًا للـ mocking) -->
+        <!-- Mockito core -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <version>5.12.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Mockito + JUnit 5 integration -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <version>5.12.0</version>
             <scope>test</scope>
         </dependency>
@@ -36,14 +44,14 @@
 
     <build>
         <plugins>
-            <!-- Surefire لتشغيل اليو نيت تست -->
+            <!-- Surefire: يشغّل JUnit 5 تلقائيًا مع junit-jupiter -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
             </plugin>
 
-            <!-- Jacoco للـ code coverage لاحقًا -->
+            <!-- JaCoCo للـ Code Coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

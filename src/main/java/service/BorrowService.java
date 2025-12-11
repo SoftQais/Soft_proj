@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Handles borrowing, overdue detection, and fines (Sprint 2).
+ * Handles borrowing, overdue detection, and fines (Sprints 2 + 5).
  */
 public class BorrowService {
 
@@ -35,20 +35,42 @@ public class BorrowService {
     }
 
     /**
-     * US2.1: Borrow a book for 28 days.
-     * - Checks available copies.
-     * - Checks user has no unpaid fines (from US2.3).
-     * - Marks book as borrowed (availableCopies--).
-     * - Creates Loan with dueDate = today + 28 days.
+     * US2.1 + US5.1: Borrow a book for 28 days.
+     *
+     * Restrictions (US5.1):
+     *  - User must have no unpaid fines.
+     *  - User must have no overdue loans.
+     *  - User must not have 3 active (not returned) loans.
      */
     public Loan borrowBook(String userId, String bookId) {
-        // حتى نضمن أن الغرامات محدثة حسب التاريخ الحالي
+
+        // 0) Ensure fines are generated for overdue loans
         generateFinesForOverdueLoans();
 
+        // 1) Restriction: user has unpaid fines
         if (hasUnpaidFines(userId)) {
             throw new IllegalStateException("User has unpaid fines. Please pay before borrowing.");
         }
 
+        // 2) Restriction: user has overdue loans (not returned & due date passed)
+        LocalDate today = timeProvider.today();
+        List<Loan> userLoans = loanRepository.findByUserId(userId);
+        for (Loan loan : userLoans) {
+            if (loan.isOverdue(today)) {
+                throw new IllegalStateException("User has overdue books. Cannot borrow until returned.");
+            }
+        }
+
+        // 3) Restriction: user already has 3 active loans
+        long activeLoans = userLoans.stream()
+                .filter(l -> !l.isReturned())
+                .count();
+
+        if (activeLoans >= 3) {
+            throw new IllegalStateException("User already has 3 active loans. Cannot borrow more.");
+        }
+
+        // 4) Check book availability
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("Book not found: " + bookId));
 
@@ -56,16 +78,16 @@ public class BorrowService {
             throw new IllegalStateException("No available copies for this book.");
         }
 
-        // Update book copies
+        // 5) Update book copies
         book.setAvailableCopies(book.getAvailableCopies() - 1);
         bookRepository.save(book);
 
-        // Create loan
+        // 6) Create loan
         String newLoanId = generateNextLoanId();
-        LocalDate today = timeProvider.today();
+        LocalDate borrowDate = today;
         LocalDate dueDate = today.plusDays(28);
 
-        Loan loan = new Loan(newLoanId, userId, bookId, today, dueDate, null);
+        Loan loan = new Loan(newLoanId, userId, bookId, borrowDate, dueDate, null);
         loanRepository.save(loan);
 
         return loan;
@@ -73,8 +95,6 @@ public class BorrowService {
 
     /**
      * US2.2: Detect overdue books and create fines (once per overdue loan).
-     * - If today > dueDate and loan not returned -> overdue.
-     * - If no Fine exists for that loan -> create Fine with 10 NIS.
      */
     public void generateFinesForOverdueLoans() {
         LocalDate today = timeProvider.today();
@@ -113,15 +133,14 @@ public class BorrowService {
 
     /**
      * US2.3: Pay fines (full or partial) for a user.
-     * - Returns how much amount was actually applied.
-     * - User can borrow only if outstandingFine(userId) == 0.
+     *
+     * @return how much amount was actually applied.
      */
     public int payFine(String userId, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Payment amount must be > 0");
         }
 
-        // قبل الدفع، حدّث الغرامات حسب الـ overdue
         generateFinesForOverdueLoans();
 
         int remaining = amount;
@@ -140,14 +159,13 @@ public class BorrowService {
             }
         }
 
-        return amount - remaining; // actually paid
+        return amount - remaining;
     }
 
     /**
      * Get total outstanding fine for a user.
      */
     public int getOutstandingFine(String userId) {
-        // حدّث الغرامات من الـ overdue أولاً
         generateFinesForOverdueLoans();
 
         int sum = 0;

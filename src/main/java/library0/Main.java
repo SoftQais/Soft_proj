@@ -3,15 +3,18 @@ package library0;
 import library0.repository.UserRepository;
 import service.AuthService;
 import service.BorrowService;
+import service.HistoryService;
 import service.LibraryService;
 import service.ReminderService;
+import service.UserManagementService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 
 /**
- * Console UI for the Library System (Sprints 1–3).
+ * Console UI for the Library System (Sprints 1–5).
  */
 public class Main {
 
@@ -22,6 +25,8 @@ public class Main {
         LibraryService lib = cfg.libraryService();
         BorrowService borrow = cfg.borrowService();
         ReminderService reminder = cfg.reminderService();
+        UserManagementService userMng = cfg.userManagementService();
+        HistoryService historyService = cfg.historyService();
         UserRepository userRepo = cfg.userRepository();
 
         // demo customer (U2) – we use it in the customer menu
@@ -80,6 +85,12 @@ public class Main {
                         handleSendReminders(reminder);
                         break;
                     case "5":
+                        handleUserManagement(sc, userMng);
+                        break;
+                    case "6":
+                        handleHistory(sc, historyService);
+                        break;
+                    case "7":
                         auth.logout();
                         System.out.println("Admin logged out.");
                         break;
@@ -111,7 +122,9 @@ public class Main {
         System.out.println("2) Search books");
         System.out.println("3) Customer operations (demo user)");
         System.out.println("4) Send overdue reminders");
-        System.out.println("5) Logout");
+        System.out.println("5) Manage users");
+        System.out.println("6) View user borrow history");
+        System.out.println("7) Logout");
         System.out.println("0) Exit");
     }
 
@@ -152,13 +165,11 @@ public class Main {
 
     private static void handleSendReminders(ReminderService reminder) {
         System.out.println("Sending overdue reminders...");
-
-        java.util.Map<String, Integer> result = reminder.sendOverdueReminders();
-
+        Map<String, Integer> result = reminder.sendOverdueReminders();
         System.out.println("Reminders sent to " + result.size() + " user(s).");
     }
 
-    // ===================== SHARED: SEARCH BOOKS =====================
+    // ===================== SEARCH BOOKS (SHARED) =====================
 
     private static void handleSearchBooks(Scanner sc, LibraryService lib) {
         System.out.println("Search by:");
@@ -288,5 +299,82 @@ public class Main {
         } catch (Exception e) {
             System.out.println("Error paying fine: " + e.getMessage());
         }
+    }
+
+    // ===================== USER MANAGEMENT (SPRINT 4) =====================
+
+    private static void handleUserManagement(Scanner sc, UserManagementService userMng) {
+        boolean back = false;
+
+        while (!back) {
+            System.out.println("---- User Management ----");
+            System.out.println("1) Register user");
+            System.out.println("2) Unregister user");
+            System.out.println("0) Back");
+            System.out.print("Choice: ");
+
+            String c = sc.nextLine().trim();
+
+            switch (c) {
+                case "1":
+                    handleRegisterUser(sc, userMng);
+                    break;
+                case "2":
+                    handleUnregisterUser(sc, userMng);
+                    break;
+                case "0":
+                    back = true;
+                    break;
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    private static void handleRegisterUser(Scanner sc, UserManagementService userMng) {
+        try {
+            System.out.print("Enter new user ID: ");
+            String id = sc.nextLine().trim();
+
+            System.out.print("Enter name: ");
+            String name = sc.nextLine().trim();
+
+            System.out.print("Enter email: ");
+            String email = sc.nextLine().trim();
+
+            System.out.print("Enter password: ");
+            String password = sc.nextLine().trim();
+
+            User u = userMng.registerUser(id, name, email, password);
+            System.out.println("User registered successfully: " + u.getName());
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static void handleUnregisterUser(Scanner sc, UserManagementService userMng) {
+        System.out.print("Enter user ID to delete: ");
+        String id = sc.nextLine().trim();
+
+        try {
+            boolean ok = userMng.unregisterUser(id);
+
+            if (ok) {
+                System.out.println("User deleted successfully.");
+            } else {
+                System.out.println("Cannot delete user: They still have active loans.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    // ===================== HISTORY (SPRINT 5) =====================
+
+    private static void handleHistory(Scanner sc, HistoryService historyService) {
+        System.out.print("Enter user ID: ");
+        String userId = sc.nextLine().trim();
+        historyService.printUserHistory(userId);
     }
 }

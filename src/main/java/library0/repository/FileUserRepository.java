@@ -3,7 +3,9 @@ package library0.repository;
 import library0.Role;
 import library0.User;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -72,6 +74,14 @@ public class FileUserRepository implements UserRepository {
     @Override
     public synchronized List<User> findAll() {
         return new ArrayList<>(readAllInternal());
+    }
+
+    public synchronized void deleteById(String id) {
+        List<User> all = readAllInternal();
+        boolean changed = all.removeIf(u -> u.getId().equals(id));
+        if (changed) {
+            writeAllInternal(all);
+        }
     }
 
     // ---------- Helpers for file I/O ----------
