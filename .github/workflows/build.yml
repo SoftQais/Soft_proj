@@ -21,27 +21,28 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'   # غيّره إلى '11' أو '8' لو مشروعك يحتاج ذلك
+          java-version: '17' # OK to change to '11' or '8' if your project needs it
 
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
-          path: ~/.m2
+          path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
       - name: Build with Maven and run tests (produces classes & reports)
-        run: mvn -B clean verify --file pom.xml
+        # provide the junit property so '${junit.jupiter.version}' in your POM is resolved
+        run: mvn -B -Djunit.jupiter.version=5.9.3 clean verify --file pom.xml
 
       - name: Run Sonar via Maven
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >
-          mvn -B sonar:sonar
-            -Dsonar.projectKey=SoftQais_Soft_proj
-            -Dsonar.organization=SoftQais
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-            -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          mvn -B -Djunit.jupiter.version=5.9.3 sonar:sonar \
+            -Dsonar.projectKey=SoftQais_Soft_proj \
+            -Dsonar.organization=SoftQais \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.java.binaries=**/target/classes
