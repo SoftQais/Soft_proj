@@ -42,3 +42,4 @@ jobs:
           -Dsonar.projectKey=SoftQais_Soft_proj \
           -Dsonar.organization=SoftQais \
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          
