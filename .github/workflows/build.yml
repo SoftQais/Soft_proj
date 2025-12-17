@@ -40,6 +40,6 @@ jobs:
         run: |
           mvn -B sonar:sonar \
           -Dsonar.projectKey=SoftQais_Soft_proj \
-          -Dsonar.organization=SoftQais \
+          -Dsonar.organization=softqais \
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           
