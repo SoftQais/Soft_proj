@@ -1,2 +1,0 @@
-U1;Admin;admin@lib.com;ADMIN;admin123
-U2;Demo User;user@lib.com;CUSTOMER;user123
